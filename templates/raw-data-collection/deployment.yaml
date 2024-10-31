@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.rawDataCollection.name}}
+spec:
+  replicas: {{.Values.rawDataCollection.replicas}}
+  selector:
+    matchLabels:
+      app: {{.Values.rawDataCollection.name}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.rawDataCollection.name}}
+    spec:
+      containers:
+        - name: {{.Values.rawDataCollection.name}}-container
+          image: {{.Values.deployment.imagePull.path}}/{{.Values.rawDataCollection.image}}
+          imagePullPolicy: {{.Values.rawDataCollection.imagePullPolicy}}
+          env:
+            - name: TZ
+              value: {{.Values.deployment.TZ}}
+          command:
+            - bash
+            - {{.Values.deployment.nodeJsApps.workingDir}}/entrypoint.sh
+          volumeMounts:
+            - name: pvc
+              mountPath: {{.Values.deployment.nodeJsApps.containerLogFolder}}/
+              subPath: {{.Values.deployment.pvc.logsSubPath}}/{{.Values.rawDataCollection.name}}
+            - name: entrypoint
+              mountPath: {{.Values.deployment.nodeJsApps.workingDir}}/entrypoint.sh
+              subPath: entrypoint.sh
+      volumes:
+        - name: pvc
+          persistentVolumeClaim:
+            claimName: {{.Values.deployment.pvc.name}}
+        - name: entrypoint
+          configMap:
+            name: {{include "nodejs-entrypoint.name" . }}
+            defaultMode: 0744
